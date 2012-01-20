@@ -1,21 +1,11 @@
+// Google StreetView
 var panorama;
 var currentYaw = 180;
 var currentPitch = 0;
 var currentZoom = 0;
 var zoomingIn = true;
 
-function load()
-{
-    panorama = new GStreetviewPanorama(document.getElementById("pano"));
-    panorama.setLocationAndPOV(new GLatLng(45.511889, -122.675578), {yaw: currentYaw, pitch: currentPitch, zoom: currentZoom});
-}
-
-function spiral()
-{
-    currentYaw += 2;
-    panorama.panTo({yaw:currentYaw, pitch:currentPitch});
-}
-
+// websockets
 var ws = null;
 var host = "localhost"
 var port = 8080
@@ -23,6 +13,9 @@ var socket = "p5websocket"
 
 function ready()
 {
+    panorama = new GStreetviewPanorama(document.getElementById("pano"));
+    panorama.setLocationAndPOV(new GLatLng(45.511889, -122.675578), {yaw: currentYaw, pitch: currentPitch, zoom: currentZoom});
+    
     console.log("trying to open a websocket")
     var _socket = (undefined==socket)?"":"/"+socket
     
@@ -36,7 +29,7 @@ function ready()
     
     // When the connection is open, send some data to the server
     ws.onopen = function () {
-        console.log("opened")
+        console.log("opened");
         ws.send('Ping'); // Send the message 'Ping' to the server
     };
 
@@ -52,10 +45,19 @@ function ready()
 
     // Log messages from the server
     ws.onmessage = function (e) {
-        if (e.data == "left") {
-            currentYaw -= 2;
-        } else if (e.data == "right") {
-            currentYaw += 2;
+        switch (e.data) {
+            case "left":
+                currentYaw -= 2;
+                break;
+            case "right":
+                currentYaw += 2;
+                break;
+            case "up":
+                currentPitch -= 2;
+                break;
+            case "down":
+                currentPitch += 2;
+                break;
         }
         panorama.panTo({yaw:currentYaw, pitch:currentPitch});
         console.log('Server: ' + e.data);
@@ -63,3 +65,4 @@ function ready()
 }
             
 document.addEventListener("DOMContentLoaded", ready, false);
+document.addEventListener("unload", GUnload, false);
