@@ -22,6 +22,12 @@ void keyPressed(){
             case RIGHT:
                 socket.broadcast("right");
                 break;
+            case UP:
+                socket.broadcast("up");
+                break;
+            case DOWN:
+                socket.broadcast("down");
+                break;
         }
     }
 }
