@@ -29,6 +29,12 @@ void keyPressed(){
                 socket.broadcast("down");
                 break;
         }
+    } else {
+        switch (key) {
+            case ' ':
+                socket.broadcast("forward");
+                break;
+        }
     }
 }
 

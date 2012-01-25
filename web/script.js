@@ -60,6 +60,9 @@ function ready()
                 break;
         }
         panorama.panTo({yaw:currentYaw, pitch:currentPitch});
+        if (e.data == "forward") {
+            panorama.followLink(currentYaw);
+        }
         console.log('Server: ' + e.data);
     };
 }
