@@ -15,7 +15,40 @@ function ready()
 {
     panorama = new GStreetviewPanorama(document.getElementById("pano"));
     panorama.setLocationAndPOV(new GLatLng(45.511889, -122.675578), {yaw: currentYaw, pitch: currentPitch, zoom: currentZoom});
+    openWebSocket();
+}
+
+function handleWebSocketMessage (e)
+{
+    console.log('Server: ' + e.data);
     
+    var command = e.data.split(":")[0];
+    
+    if (command == "forward") {
+        panorama.followLink(currentYaw);
+    } else {
+        var value = e.data.split(":")[1]*1;
+        console.log(value);
+        switch (command) {
+            case "left":
+                currentYaw -= value;
+                break;
+            case "right":
+                currentYaw += value;
+                break;
+            case "up":
+                currentPitch -= value;
+                break;
+            case "down":
+                currentPitch += value;
+                break;
+        }
+        panorama.panTo({yaw:currentYaw, pitch:currentPitch});
+    }
+}
+
+function openWebSocket()
+{
     console.log("trying to open a websocket")
     var _socket = (undefined==socket)?"":"/"+socket
     
@@ -27,44 +60,20 @@ function ready()
         ws = new WebSocket (_url);
     }
     
-    // When the connection is open, send some data to the server
     ws.onopen = function () {
-        console.log("opened");
-        ws.send('Ping'); // Send the message 'Ping' to the server
+        console.log("websocket opened");
+        ws.send('ping'); // Send the message 'Ping' to the server
     };
-
     // oh, it did close
-    ws.onerror = function (e) {
+    ws.onclose = function (e) {
         console.log('WebSocket did close ',e);
+        window.setTimeout(openWebSocket, 5000);  
     };
-    
     // Log errors
     ws.onerror = function (error) {
         console.log('WebSocket Error ' + error);
     };
-
-    // Log messages from the server
-    ws.onmessage = function (e) {
-        switch (e.data) {
-            case "left":
-                currentYaw -= 2;
-                break;
-            case "right":
-                currentYaw += 2;
-                break;
-            case "up":
-                currentPitch -= 2;
-                break;
-            case "down":
-                currentPitch += 2;
-                break;
-        }
-        panorama.panTo({yaw:currentYaw, pitch:currentPitch});
-        if (e.data == "forward") {
-            panorama.followLink(currentYaw);
-        }
-        console.log('Server: ' + e.data);
-    };
+    ws.onmessage = handleWebSocketMessage;
 }
             
 document.addEventListener("DOMContentLoaded", ready, false);

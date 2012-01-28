@@ -11,6 +11,10 @@ float rotY = radians(0);
 float bodyHeight = 0;
 float headHeight = 0;
 
+boolean horizontalMovement = true;
+boolean mirrorHorizontalMovement = false;
+boolean verticalMovement = true;
+
 void setup()
 {
     socket = new WebSocketP5(this,8080);
@@ -52,39 +56,57 @@ void calculateThings(int userId)
     PMatrix3D  orientation = new PMatrix3D();
     float confidence = context.getJointOrientationSkeleton(userId,SimpleOpenNI.SKEL_HEAD,orientation);
     
-    PVector seitlicheNeigung = new PVector(0, 0, 0);
-    orientation.mult(new PVector(0, -100, 0), seitlicheNeigung);
-    seitlicheNeigung = new PVector(seitlicheNeigung.x, seitlicheNeigung.y);
-    seitlicheNeigung.normalize();
-    seitlicheNeigung.mult(100);
-    pushMatrix();
-        translate(width/2, height/2);
-        stroke(0, 0, 255, 128);
-        strokeWeight(20);
-        line(0, 0, seitlicheNeigung.x, seitlicheNeigung.y);
-    popMatrix();
-    float seitlicheNeigungDegrees = degrees(seitlicheNeigung.heading2D())+90;
-    println("vertikal geneigt um " + seitlicheNeigung);
-    if (seitlicheNeigungDegrees > 5) {
-        socket.broadcast("left");
-    } else if (seitlicheNeigungDegrees < -5) {
-        socket.broadcast("right");
+    if (horizontalMovement) {
+        PVector seitlicheNeigung = new PVector(0, 0, 0);
+        orientation.mult(new PVector(0, -100, 0), seitlicheNeigung);
+        seitlicheNeigung = new PVector(seitlicheNeigung.x, seitlicheNeigung.y);
+        seitlicheNeigung.normalize();
+        seitlicheNeigung.mult(100);
+        pushMatrix();
+            translate(width/2, height/2);
+            stroke(0, 0, 255, 128);
+            strokeWeight(20);
+            line(0, 0, seitlicheNeigung.x, seitlicheNeigung.y);
+        popMatrix();
+        float seitlicheNeigungDegrees = degrees(seitlicheNeigung.heading2D()) + 90;
+        println("vertikal geneigt um " + seitlicheNeigungDegrees);
+        float seitlicheNeigungToleranz = 4;
+        if (floor(seitlicheNeigungDegrees) > seitlicheNeigungToleranz) {
+            if (mirrorHorizontalMovement) {
+                socket.broadcast("left:" + sqrt(abs(seitlicheNeigungDegrees - seitlicheNeigungToleranz)));
+            } else {
+                socket.broadcast("right:" + sqrt(abs(seitlicheNeigungDegrees - seitlicheNeigungToleranz)));
+            }
+        } else if (floor(seitlicheNeigungDegrees) < - seitlicheNeigungToleranz) {
+            if (mirrorHorizontalMovement) {
+                socket.broadcast("right:" + sqrt(abs(seitlicheNeigungDegrees + seitlicheNeigungToleranz)));
+            } else {
+                socket.broadcast("left:" + sqrt(abs(seitlicheNeigungDegrees + seitlicheNeigungToleranz)));
+            }
+        }
     }
-    
-    PVector vornehintenNeigung = new PVector(0, 0, 0);
-    orientation.mult(new PVector(0, 0, 100), vornehintenNeigung);
-    vornehintenNeigung = new PVector(vornehintenNeigung.z, vornehintenNeigung.y);
-    vornehintenNeigung.normalize();
-    vornehintenNeigung.mult(100);
-    pushMatrix();
-        translate(width/2, height/2);
-        stroke(0, 255, 0, 128);
-        strokeWeight(20);
-        line(0, 0, vornehintenNeigung.x, vornehintenNeigung.y);
-    popMatrix();
-    float vornehintenNeigungDegrees = degrees(vornehintenNeigung.heading2D());
-    println("vorne/hinten geneigt um " + vornehintenNeigungDegrees);
-        
+    if (verticalMovement) {
+        PVector vornehintenNeigung = new PVector(0, 0, 0);
+        orientation.mult(new PVector(0, 0, 100), vornehintenNeigung);
+        vornehintenNeigung = new PVector(vornehintenNeigung.z, vornehintenNeigung.y);
+        vornehintenNeigung.normalize();
+        vornehintenNeigung.mult(100);
+        pushMatrix();
+            translate(width/2, height/2);
+            stroke(0, 255, 0, 128);
+            strokeWeight(20);
+            line(0, 0, vornehintenNeigung.x, vornehintenNeigung.y);
+        popMatrix();
+        float vornehintenNeigungDegrees = degrees(vornehintenNeigung.heading2D());
+        println("vorne/hinten geneigt um " + vornehintenNeigungDegrees);
+        float vorneToleranz = 20;
+        float hintenToleranz = 0;
+        if (floor(vornehintenNeigungDegrees) > vorneToleranz) {
+            socket.broadcast("down:" + sqrt(abs(vornehintenNeigungDegrees - vorneToleranz)));
+        } else if (floor(vornehintenNeigungDegrees) < hintenToleranz) {
+            socket.broadcast("up:" + sqrt(abs(vornehintenNeigungDegrees) + hintenToleranz));
+        }
+    }
     //PVector linksrechts = new PVector(0, 0, 0);
     //orientation.mult(new PVector(0, 0, -100), linksrechts);
     //linksrechts = new PVector(-linksrechts.x, linksrechts.z);
@@ -109,22 +131,52 @@ void keyPressed()
     if (key == CODED) {
         switch (keyCode) {
             case LEFT:
-                socket.broadcast("left");
+                socket.broadcast("left:1");
                 break;
             case RIGHT:
-                socket.broadcast("right");
+                socket.broadcast("right:1");
                 break;
             case UP:
-                socket.broadcast("up");
+                socket.broadcast("up:1");
                 break;
             case DOWN:
-                socket.broadcast("down");
+                socket.broadcast("down:1");
                 break;
         }
     } else {
         switch (key) {
             case ' ':
                 socket.broadcast("forward");
+                break;
+            case 'x':
+                mirrorHorizontalMovement = !mirrorHorizontalMovement;
+                println("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+                if (mirrorHorizontalMovement) {
+                    println("mirror movement ON");
+                } else {
+                    println("mirror movement OFF");
+                }
+                println("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+                break;
+            case 'h':
+                horizontalMovement = !horizontalMovement;
+                println("hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh");
+                if (horizontalMovement) {
+                    println("horizontal movement ON");
+                } else {
+                    println("horizontal movement OFF");
+                }
+                println("hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh");
+                break;
+            case 'v':
+                verticalMovement = !verticalMovement;
+                println("vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv");
+                if (verticalMovement) {
+                    println("vertical movement ON");
+                } else {
+                    println("vertical movement OFF");
+                }
+                println("vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv");
                 break;
         }
     }
