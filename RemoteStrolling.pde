@@ -20,7 +20,7 @@ void setup()
     socket = new WebSocketP5(this,8080);
     context = new SimpleOpenNI(this);
     if (context.enableDepth() == false) {
-        println("Can't open the depthMap, maybe the camera is not connected!"); 
+        println("Can't open the depthMap, maybe the camera is not connected!");
         exit();
         return;
     }
@@ -52,10 +52,10 @@ void calculateThings(int userId)
     PVector blah = PVector.div(PVector.add(leftFoot, rightFoot), 2);
     bodyHeight = PVector.dist(blah, head);
     headHeight = PVector.dist(neck, head);
-    
+
     PMatrix3D  orientation = new PMatrix3D();
     float confidence = context.getJointOrientationSkeleton(userId,SimpleOpenNI.SKEL_HEAD,orientation);
-    
+
     if (horizontalMovement) {
         PVector seitlicheNeigung = new PVector(0, 0, 0);
         orientation.mult(new PVector(0, -100, 0), seitlicheNeigung);
@@ -207,7 +207,7 @@ void drawSkeleton(int userId)
 {
     strokeWeight(2);
     stroke(255, 0, 0);
-    
+
     context.drawLimb(userId, SimpleOpenNI.SKEL_HEAD, SimpleOpenNI.SKEL_NECK);
 
     context.drawLimb(userId, SimpleOpenNI.SKEL_NECK, SimpleOpenNI.SKEL_LEFT_SHOULDER);
@@ -250,11 +250,11 @@ void onStartCalibration(int userId)
 void onEndCalibration(int userId, boolean successfull)
 {
     println("onEndCalibration - userId: " + userId + ", successfull: " + successfull);
-  
-    if (successfull) { 
+
+    if (successfull) {
         println("  User calibrated !!!");
-        context.startTrackingSkeleton(userId); 
-    } else { 
+        context.startTrackingSkeleton(userId);
+    } else {
         println("  Failed to calibrate user !!!");
         println("  Start pose detection");
         context.startPoseDetection("Psi",userId);
@@ -265,8 +265,8 @@ void onStartPose(String pose,int userId)
 {
     println("onStartdPose - userId: " + userId + ", pose: " + pose);
     println(" stop pose detection");
-    
-    context.stopPoseDetection(userId); 
+
+    context.stopPoseDetection(userId);
     context.requestCalibrationSkeleton(userId, true);
 }
 

@@ -21,9 +21,9 @@ function ready()
 function handleWebSocketMessage (e)
 {
     console.log('Server: ' + e.data);
-    
+
     var command = e.data.split(":")[0];
-    
+
     if (command == "forward") {
         panorama.followLink(currentYaw);
     } else {
@@ -51,15 +51,15 @@ function openWebSocket()
 {
     console.log("trying to open a websocket")
     var _socket = (undefined==socket)?"":"/"+socket
-    
+
     _url = "ws://"+host+":"+port+_socket
-    
+
     if ('MozWebSocket' in window) {
         ws = new MozWebSocket (_url);
     } else {
         ws = new WebSocket (_url);
     }
-    
+
     ws.onopen = function () {
         console.log("websocket opened");
         ws.send('ping'); // Send the message 'Ping' to the server
@@ -67,7 +67,7 @@ function openWebSocket()
     // oh, it did close
     ws.onclose = function (e) {
         console.log('WebSocket did close ',e);
-        window.setTimeout(openWebSocket, 5000);  
+        window.setTimeout(openWebSocket, 5000);
     };
     // Log errors
     ws.onerror = function (error) {
@@ -75,6 +75,6 @@ function openWebSocket()
     };
     ws.onmessage = handleWebSocketMessage;
 }
-            
+
 document.addEventListener("DOMContentLoaded", ready, false);
 document.addEventListener("unload", GUnload, false);
