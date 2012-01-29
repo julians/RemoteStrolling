@@ -16,6 +16,9 @@ function ready()
     panorama = new GStreetviewPanorama(document.getElementById("pano"));
     panorama.setLocationAndPOV(new GLatLng(45.511889, -122.675578), {yaw: currentYaw, pitch: currentPitch, zoom: currentZoom});
     openWebSocket();
+    $(window).resize(function() {
+        panorama.checkResize();
+    });
 }
 
 function handleWebSocketMessage (e)
