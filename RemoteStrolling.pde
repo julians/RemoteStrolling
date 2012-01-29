@@ -13,8 +13,10 @@ float headHeight = 0;
 
 boolean horizontalMovement = true;
 boolean mirrorHorizontalMovement = false;
-boolean verticalMovement = false;
+boolean verticalMovement = true;
 
+float previousYaw = 0;
+float previousPitch = 0;
 float yaw = 0;
 float pitch = 0;
 
@@ -130,7 +132,7 @@ void calculateThings(int userId)
             line(0, 0, linksrechts.x, linksrechts.y);
         popMatrix();
         float linksrechtsGrad = degrees(linksrechts.heading2D()) + 90;
-        println("links/rechts gedreht um " + linksrechtsGrad);
+        //println("links/rechts gedreht um " + linksrechtsGrad);
         
         float linksrechtsToleranz = 10;
         if (abs(linksrechtsGrad) > linksrechtsToleranz) {
@@ -207,11 +209,17 @@ void keyPressed()
 
 void sendViewUpdate ()
 {
-    socket.broadcast("view:"+yaw+":"+pitch);
+    if (yaw != previousYaw || pitch != previousPitch) {
+        println("yaw: " + yaw + ", pitch: " + pitch);
+        socket.broadcast("view:"+yaw+":"+pitch);
+        previousYaw = yaw;
+        previousPitch = pitch;
+    }
 }
 
 void sendStep ()
 {
+    println("step");
     socket.broadcast("step");
 }
 
@@ -224,7 +232,9 @@ void websocketOnMessage(WebSocketConnection con, String msg)
 	String[] message = split(msg, ":");
 	if (message[0].equals("info")) {
 	    yaw = float(message[1]);
+	    previousYaw = yaw;
         pitch = float(message[2]);
+        previousPitch = pitch;
 	}
     println("yaw: " + yaw);
     println("pitch: " + pitch);
