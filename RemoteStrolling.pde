@@ -13,7 +13,7 @@ float headHeight = 0;
 
 boolean horizontalMovement = true;
 boolean mirrorHorizontalMovement = false;
-boolean verticalMovement = true;
+boolean verticalMovement = false;
 
 void setup()
 {
@@ -56,6 +56,7 @@ void calculateThings(int userId)
     PMatrix3D  orientation = new PMatrix3D();
     float confidence = context.getJointOrientationSkeleton(userId,SimpleOpenNI.SKEL_HEAD,orientation);
 
+    /*
     if (horizontalMovement) {
         PVector seitlicheNeigung = new PVector(0, 0, 0);
         orientation.mult(new PVector(0, -100, 0), seitlicheNeigung);
@@ -85,6 +86,7 @@ void calculateThings(int userId)
             }
         }
     }
+    */
     if (verticalMovement) {
         PVector vornehintenNeigung = new PVector(0, 0, 0);
         orientation.mult(new PVector(0, 0, 100), vornehintenNeigung);
@@ -107,18 +109,36 @@ void calculateThings(int userId)
             socket.broadcast("up:" + sqrt(abs(vornehintenNeigungDegrees) + hintenToleranz));
         }
     }
-    //PVector linksrechts = new PVector(0, 0, 0);
-    //orientation.mult(new PVector(0, 0, -100), linksrechts);
-    //linksrechts = new PVector(-linksrechts.x, linksrechts.z);
-    //linksrechts.normalize();
-    //linksrechts.mult(100);
-    //pushMatrix();
-    //    translate(width/2, height/2);
-    //    stroke(255, 0, 0, 128);
-    //    strokeWeight(20);
-    //    line(0, 0, linksrechts.x, linksrechts.y);
-    //popMatrix();
-    //println("links/rechts gedreht um " + (degrees(linksrechts.heading2D())+90));
+    if (horizontalMovement) {
+        PVector linksrechts = new PVector(0, 0, 0);
+        orientation.mult(new PVector(0, 0, -100), linksrechts);
+        linksrechts = new PVector(-linksrechts.x, linksrechts.z);
+        linksrechts.normalize();
+        linksrechts.mult(100);
+        pushMatrix();
+            translate(width/2, height/2);
+            stroke(255, 0, 0, 128);
+            strokeWeight(20);
+            line(0, 0, linksrechts.x, linksrechts.y);
+        popMatrix();
+        float linksrechtsGrad = degrees(linksrechts.heading2D()) + 90;
+        println("links/rechts gedreht um " + linksrechtsGrad);
+        
+        float linksrechtsToleranz = 10;
+        if (floor(linksrechtsGrad) > linksrechtsToleranz) {
+            if (mirrorHorizontalMovement) {
+                socket.broadcast("left:" + sqrt(sqrt(abs(linksrechtsGrad - linksrechtsToleranz))));
+            } else {
+                socket.broadcast("right:" + sqrt(sqrt(abs(linksrechtsGrad - linksrechtsToleranz))));
+            }
+        } else if (floor(linksrechtsGrad) < - linksrechtsToleranz) {
+            if (mirrorHorizontalMovement) {
+                socket.broadcast("right:" + sqrt(sqrt(abs(linksrechtsGrad + linksrechtsToleranz))));
+            } else {
+                socket.broadcast("left:" + sqrt(sqrt(abs(linksrechtsGrad + linksrechtsToleranz))));
+            }
+        }
+    }
 }
 
 void stop()
