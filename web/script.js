@@ -24,25 +24,14 @@ function handleWebSocketMessage (e)
 
     var command = e.data.split(":")[0];
 
-    if (command == "forward") {
+    if (command == "step") {
         panorama.followLink(currentYaw);
-    } else {
-        var value = e.data.split(":")[1]*1;
-        console.log(value);
-        switch (command) {
-            case "left":
-                currentYaw -= value;
-                break;
-            case "right":
-                currentYaw += value;
-                break;
-            case "up":
-                currentPitch -= value;
-                break;
-            case "down":
-                currentPitch += value;
-                break;
-        }
+    } else if (command == "info") {
+        sendInfo();
+    } else if (command == "view") {
+        var values = e.data.split(":");
+        currentYaw = values[1]*1;
+        currentPitch = values[2]*1;
         panorama.panTo({yaw:currentYaw, pitch:currentPitch});
     }
 }
@@ -50,6 +39,7 @@ function handleWebSocketMessage (e)
 function openWebSocket()
 {
     console.log("trying to open a websocket")
+    ws = null;
     var _socket = (undefined==socket)?"":"/"+socket
 
     _url = "ws://"+host+":"+port+_socket
@@ -62,7 +52,7 @@ function openWebSocket()
 
     ws.onopen = function () {
         console.log("websocket opened");
-        ws.send('ping'); // Send the message 'Ping' to the server
+        window.setTimeout(sendInfo, 100);
     };
     // oh, it did close
     ws.onclose = function (e) {
@@ -74,6 +64,11 @@ function openWebSocket()
         console.log('WebSocket Error ' + error);
     };
     ws.onmessage = handleWebSocketMessage;
+}
+
+function sendInfo()
+{
+    ws.send(["info", currentYaw, currentPitch].join(":"));
 }
 
 document.addEventListener("DOMContentLoaded", ready, false);

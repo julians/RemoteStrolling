@@ -15,27 +15,35 @@ boolean horizontalMovement = true;
 boolean mirrorHorizontalMovement = false;
 boolean verticalMovement = false;
 
+float yaw = 0;
+float pitch = 0;
+
+boolean kinect = false;
+
 void setup()
 {
     socket = new WebSocketP5(this,8080);
     context = new SimpleOpenNI(this);
-    if (context.enableDepth() == false) {
+    if (context.enableDepth() == true) {
+        kinect = true;
+        context.enableUser(SimpleOpenNI.SKEL_PROFILE_ALL);
+        size(context.depthWidth(), context.depthHeight());
+    } else {
         println("Can't open the depthMap, maybe the camera is not connected!");
-        exit();
-        return;
+        size(800, 600);
     }
-    context.enableUser(SimpleOpenNI.SKEL_PROFILE_ALL);
-    size(context.depthWidth(), context.depthHeight());
     smooth();
 }
 
 void draw()
 {
-    context.update();
-    image(context.depthImage(),0,0);
-    if(context.isTrackingSkeleton(1)) {
-        drawSkeleton(1);
-        calculateThings(1);
+    if (kinect) {
+        context.update();
+        image(context.depthImage(),0,0);
+        if(context.isTrackingSkeleton(1)) {
+            drawSkeleton(1);
+            calculateThings(1);
+        }        
     }
 }
 
@@ -104,9 +112,9 @@ void calculateThings(int userId)
         float vorneToleranz = 20;
         float hintenToleranz = 0;
         if (floor(vornehintenNeigungDegrees) > vorneToleranz) {
-            socket.broadcast("down:" + sqrt(abs(vornehintenNeigungDegrees - vorneToleranz)));
+            pitch += sqrt(sqrt(abs(vornehintenNeigungDegrees - vorneToleranz)));
         } else if (floor(vornehintenNeigungDegrees) < hintenToleranz) {
-            socket.broadcast("up:" + sqrt(abs(vornehintenNeigungDegrees) + hintenToleranz));
+            pitch -= sqrt(sqrt(abs(vornehintenNeigungDegrees) + hintenToleranz));
         }
     }
     if (horizontalMovement) {
@@ -125,20 +133,14 @@ void calculateThings(int userId)
         println("links/rechts gedreht um " + linksrechtsGrad);
         
         float linksrechtsToleranz = 10;
-        if (floor(linksrechtsGrad) > linksrechtsToleranz) {
-            if (mirrorHorizontalMovement) {
-                socket.broadcast("left:" + sqrt(sqrt(abs(linksrechtsGrad - linksrechtsToleranz))));
-            } else {
-                socket.broadcast("right:" + sqrt(sqrt(abs(linksrechtsGrad - linksrechtsToleranz))));
-            }
-        } else if (floor(linksrechtsGrad) < - linksrechtsToleranz) {
-            if (mirrorHorizontalMovement) {
-                socket.broadcast("right:" + sqrt(sqrt(abs(linksrechtsGrad + linksrechtsToleranz))));
-            } else {
-                socket.broadcast("left:" + sqrt(sqrt(abs(linksrechtsGrad + linksrechtsToleranz))));
-            }
+        if (abs(linksrechtsGrad) > linksrechtsToleranz) {
+            float grad = sqrt(sqrt(abs(linksrechtsGrad - linksrechtsToleranz)));
+            if (linksrechtsGrad < 0) grad *= -1;
+            if (mirrorHorizontalMovement) grad *= -1;
+            yaw += grad;
         }
     }
+    sendViewUpdate();
 }
 
 void stop()
@@ -151,22 +153,23 @@ void keyPressed()
     if (key == CODED) {
         switch (keyCode) {
             case LEFT:
-                socket.broadcast("left:1");
+                yaw -= 1;
                 break;
             case RIGHT:
-                socket.broadcast("right:1");
+                yaw += 1;
                 break;
             case UP:
-                socket.broadcast("up:1");
+                pitch -= 1;
                 break;
             case DOWN:
-                socket.broadcast("down:1");
+                pitch += 1;
                 break;
         }
+        sendViewUpdate();
     } else {
         switch (key) {
             case ' ':
-                socket.broadcast("forward");
+                sendStep();
                 break;
             case 'x':
                 mirrorHorizontalMovement = !mirrorHorizontalMovement;
@@ -202,12 +205,29 @@ void keyPressed()
     }
 }
 
+void sendViewUpdate ()
+{
+    socket.broadcast("view:"+yaw+":"+pitch);
+}
+
+void sendStep ()
+{
+    socket.broadcast("step");
+}
+
 // -----------------------------------------------------------------
 // websocket events
 
 void websocketOnMessage(WebSocketConnection con, String msg)
 {
 	println(msg);
+	String[] message = split(msg, ":");
+	if (message[0].equals("info")) {
+	    yaw = float(message[1]);
+        pitch = float(message[2]);
+	}
+    println("yaw: " + yaw);
+    println("pitch: " + pitch);
 }
 
 void websocketOnOpen(WebSocketConnection con)
