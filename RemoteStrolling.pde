@@ -108,13 +108,13 @@ void calculateThings(int userId)
             line(0, 0, vornehintenNeigung.x, vornehintenNeigung.y);
         popMatrix();
         float vornehintenNeigungDegrees = degrees(vornehintenNeigung.heading2D());
-        println("vorne/hinten geneigt um " + vornehintenNeigungDegrees);
+        //println("vorne/hinten geneigt um " + vornehintenNeigungDegrees);
         float vorneToleranz = 20;
         float hintenToleranz = 0;
         if (floor(vornehintenNeigungDegrees) > vorneToleranz) {
-            pitch += sqrt(sqrt(abs(vornehintenNeigungDegrees - vorneToleranz)));
+            pitch = vornehintenNeigungDegrees - vorneToleranz;
         } else if (floor(vornehintenNeigungDegrees) < hintenToleranz) {
-            pitch -= sqrt(sqrt(abs(vornehintenNeigungDegrees) + hintenToleranz));
+            pitch = vornehintenNeigungDegrees + hintenToleranz;
         }
     }
     if (horizontalMovement) {
