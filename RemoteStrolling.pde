@@ -114,9 +114,9 @@ void calculateThings(int userId)
         float vorneToleranz = 20;
         float hintenToleranz = 0;
         if (floor(vornehintenNeigungDegrees) > vorneToleranz) {
-            pitch = vornehintenNeigungDegrees - vorneToleranz;
+            pitch = round(vornehintenNeigungDegrees - vorneToleranz);
         } else if (floor(vornehintenNeigungDegrees) < hintenToleranz) {
-            pitch = vornehintenNeigungDegrees + hintenToleranz;
+            pitch = round(vornehintenNeigungDegrees + hintenToleranz);
         }
     }
     if (horizontalMovement) {
@@ -139,7 +139,7 @@ void calculateThings(int userId)
             float grad = sqrt(sqrt(abs(linksrechtsGrad - linksrechtsToleranz)));
             if (linksrechtsGrad < 0) grad *= -1;
             if (mirrorHorizontalMovement) grad *= -1;
-            yaw += grad;
+            yaw += round(grad);
         }
     }
     sendViewUpdate();
