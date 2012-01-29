@@ -9,7 +9,8 @@ float zoomF = 0.5f;
 float rotX = radians(180);
 float rotY = radians(0);
 float bodyHeight = 0;
-float headHeight = 0;
+float[] footAverageY;
+float[] neckAverageY;
 
 boolean horizontalMovement = true;
 boolean mirrorHorizontalMovement = false;
@@ -21,6 +22,8 @@ float yaw = 0;
 float pitch = 0;
 
 boolean kinect = false;
+
+boolean jumpInProgress = false;
 
 void setup()
 {
@@ -35,6 +38,8 @@ void setup()
         size(800, 600);
     }
     smooth();
+    footAverageY = new float[30];
+    neckAverageY = new float[30];
 }
 
 void draw()
@@ -46,6 +51,45 @@ void draw()
             drawSkeleton(1);
             calculateThings(1);
         }        
+    }
+}
+
+void checkForJumping (PVector neck, PVector feet)
+{
+    float footAverage = 0;
+    float neckAverage = 0;
+    int neckL = 1;
+    int feetL = 1;
+    
+    for (int i = 0; i < footAverageY.length; i++) {
+        if (i + 1 < footAverageY.length) {
+            footAverageY[i+1] = footAverageY[i];
+            neckAverageY[i+1] = neckAverageY[i];
+            footAverage += footAverageY[i+1];
+            neckAverage += neckAverageY[i+1];
+            if (neckAverageY[i+1] > 0) neckL++;
+            if (footAverageY[i+1] > 0) feetL++;
+        }
+    }
+    footAverageY[0] = feet.y;
+    neckAverageY[0] = neck.y;
+    
+    footAverage += feet.y;
+    neckAverage += neck.y;
+    footAverage /= feetL;
+    neckAverage /= neckL;
+    
+    float bodyHeight = neck.y - feet.y;
+    
+    if (jumpInProgress) {
+        if (neck.y - neckAverage < bodyHeight/25) {
+            jumpInProgress = false;
+        }
+    } else {
+        if (neck.y - neckAverage > bodyHeight/25) {
+            jumpInProgress = true;
+            sendStep();
+        }
     }
 }
 
@@ -61,7 +105,8 @@ void calculateThings(int userId)
     context.getJointPositionSkeleton(userId, SimpleOpenNI.SKEL_RIGHT_FOOT, rightFoot);
     PVector blah = PVector.div(PVector.add(leftFoot, rightFoot), 2);
     bodyHeight = PVector.dist(blah, head);
-    headHeight = PVector.dist(neck, head);
+    
+    checkForJumping(neck, blah);
 
     PMatrix3D  orientation = new PMatrix3D();
     float confidence = context.getJointOrientationSkeleton(userId,SimpleOpenNI.SKEL_HEAD,orientation);
@@ -134,7 +179,7 @@ void calculateThings(int userId)
         float linksrechtsGrad = degrees(linksrechts.heading2D()) + 90;
         //println("links/rechts gedreht um " + linksrechtsGrad);
         
-        float linksrechtsToleranz = 10;
+        float linksrechtsToleranz = 15;
         if (abs(linksrechtsGrad) > linksrechtsToleranz) {
             float grad = sqrt(sqrt(abs(linksrechtsGrad - linksrechtsToleranz)));
             if (linksrechtsGrad < 0) grad *= -1;
@@ -210,7 +255,7 @@ void keyPressed()
 void sendViewUpdate ()
 {
     if (yaw != previousYaw || pitch != previousPitch) {
-        println("yaw: " + yaw + ", pitch: " + pitch);
+        //println("yaw: " + yaw + ", pitch: " + pitch);
         socket.broadcast("view:"+yaw+":"+pitch);
         previousYaw = yaw;
         previousPitch = pitch;
