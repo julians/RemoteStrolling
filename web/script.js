@@ -11,6 +11,9 @@ var host = "localhost"
 var port = 8080
 var socket = "p5websocket"
 
+var panoLeftOffset = -100;
+var panoRightOffset = 0;
+
 var places = {
     "standard": {
         title: "Remote Strolling",
@@ -41,9 +44,34 @@ function ready ()
     panorama = new GStreetviewPanorama(document.getElementById("pano"));
     setPosition("oxford");
     openWebSocket();
+    drawCurtains();
     $(window).resize(function() {
-        panorama.checkResize();
+        drawCurtains();
     });
+}
+
+function drawCurtains ()
+{
+    console.log($(window).width());
+    var desiredWidth = $(window).height()/16*12;
+    console.log(desiredWidth);
+    var curtainWidth = ($(window).width()-desiredWidth)/2;
+    console.log(curtainWidth);
+    $("#pano").css({
+        "left": (curtainWidth+panoLeftOffset) + "px",
+        "right": (curtainWidth+panoRightOffset) + "px"
+    });
+    $("#text").css({
+        "left": (curtainWidth+10) + "px",
+        "right": (curtainWidth+10) + "px"
+    });
+    $("#leftCurtain").css({
+        "right": ($(window).width()-curtainWidth) + "px"
+    });
+    $("#rightCurtain").css({
+        "left": ($(window).width()-curtainWidth) + "px"
+    });
+    panorama.checkResize();
 }
 
 function handleWebSocketMessage (e)
@@ -102,6 +130,7 @@ function sendInfo()
 function setTitle(text)
 {
     $("#text").html(text);
+    $("#text").fitText(3.5);
 }
 
 document.addEventListener("DOMContentLoaded", ready, false);

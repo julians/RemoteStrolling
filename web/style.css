@@ -38,3 +38,14 @@ body {
     color: white;
     text-shadow: rgb(171, 171, 171) 0px 1px 0px, rgb(157, 157, 157) 0px 2px 0px, rgb(143, 143, 143) 0px 3px 0px, rgb(130, 130, 130) 0px 4px 0px, rgb(116, 116, 116) 0px 5px 0px, rgba(0, 0, 0, 0.296875) 0px 6px 1px, rgba(0, 0, 0, 0.296875) 0px 0px 5px, rgba(0, 0, 0, 0.898438) 0px 1px 3px, rgba(0, 0, 0, 0.597656) 0px 3px 5px, rgba(0, 0, 0, 0.746094) 0px 5px 10px, rgba(0, 0, 0, 0.597656) 0px 10px 10px, rgba(0, 0, 0, 0.449219) 0px 20px 20px;
 }
+
+#leftCurtain,
+#rightCurtain {
+    background: black;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 99;
+}
