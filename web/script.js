@@ -11,10 +11,35 @@ var host = "localhost"
 var port = 8080
 var socket = "p5websocket"
 
-function ready()
+var places = {
+    "standard": {
+        title: "Remote Strolling",
+        coords: new GLatLng(45.511889, -122.675578),
+        yaw: 180
+    },
+    "berkeley": {
+        title: "University of California, Berkeley",
+        coords: new GLatLng(37.872678, -122.261733),
+        yaw: 285
+    },
+    "oxford": {
+        title: "University of Oxford, England",
+        coords: new GLatLng(51.756179,-1.255295),
+        yaw: 160
+    }
+};
+
+function setPosition (place)
+{
+    var pos = places[place];
+    panorama.setLocationAndPOV(pos.coords, {yaw: pos.yaw, pitch: currentPitch, zoom: currentZoom});
+    setTitle(pos.title);
+}
+
+function ready ()
 {
     panorama = new GStreetviewPanorama(document.getElementById("pano"));
-    panorama.setLocationAndPOV(new GLatLng(45.511889, -122.675578), {yaw: currentYaw, pitch: currentPitch, zoom: currentZoom});
+    setPosition("oxford");
     openWebSocket();
     $(window).resize(function() {
         panorama.checkResize();
@@ -72,6 +97,11 @@ function openWebSocket()
 function sendInfo()
 {
     ws.send(["info", currentYaw, currentPitch].join(":"));
+}
+
+function setTitle(text)
+{
+    $("#text").html(text);
 }
 
 document.addEventListener("DOMContentLoaded", ready, false);
