@@ -85,11 +85,11 @@ void checkForJumping (PVector neck, PVector feet)
     float bodyHeight = neck.y - feet.y;
     
     if (jumpInProgress) {
-        if (neck.y - neckAverage < bodyHeight/25) {
+        if (neck.y - neckAverage < bodyHeight/30) {
             jumpInProgress = false;
         }
     } else {
-        if (neck.y - neckAverage > bodyHeight/25) {
+        if (neck.y - neckAverage > bodyHeight/30) {
             jumpInProgress = true;
             sendStep();
         }
@@ -115,18 +115,14 @@ void checkForStep(int userId) {
     context.getJointPositionSkeleton(userId, SimpleOpenNI.SKEL_RIGHT_HIP, rightKnee);
     PVector rightHip = new PVector();
     context.getJointPositionSkeleton(userId, SimpleOpenNI.SKEL_RIGHT_HIP, rightKnee);
-    PVector torso = new PVector();
-    context.getJointPositionSkeleton(userId, SimpleOpenNI.SKEL_TORSO, torso);
-    PVector waist = new PVector();
-    context.getJointPositionSkeleton(userId, SimpleOpenNI.SKEL_WAIST, torso);
-    int stepDist= floor(norm(abs(rightFoot.y-leftFoot.y), 0, (rightHip.dist(rightFoot)+leftHip.dist(leftFoot))/2)*100);
+    int stepDist= floor(norm(abs(rightFoot.y-leftFoot.y), 0,                (rightHip.dist(rightFoot)+leftHip.dist(leftFoot))/2)*100);
  
-    if (step) {
-        step = (stepDist == 0) ? false: step;
-    } else if (stepDist > 1) {
-        step = true;
-        sendStep();
-     }
+    if (step) {
+        step = (stepDist > 0);
+    } else if (stepDist > 2) {
+        step = true;
+        sendStep();
+    }
  }
 
 void calculateThings(int userId)
@@ -187,7 +183,7 @@ void calculateThings(int userId)
                 line(0, 0, seitlicheNeigung.x, seitlicheNeigung.y);
             popMatrix();
             float seitlicheNeigungDegrees = degrees(seitlicheNeigung.heading2D()) + 90;
-            println("vertikal geneigt um " + seitlicheNeigungDegrees);
+            // println("vertikal geneigt um " + seitlicheNeigungDegrees);
             float seitlicheNeigungToleranz = 4;
             
             if (abs(seitlicheNeigungDegrees) > seitlicheNeigungToleranz) {
@@ -212,8 +208,8 @@ void calculateThings(int userId)
         popMatrix();
         float vornehintenNeigungDegrees = degrees(vornehintenNeigung.heading2D());
         //println("vorne/hinten geneigt um " + vornehintenNeigungDegrees);
-        float vorneToleranz = 20;
-        float hintenToleranz = 0;
+        float vorneToleranz = 22;
+        float hintenToleranz = 2;
         if (floor(vornehintenNeigungDegrees) > vorneToleranz) {
             pitch = round(vornehintenNeigungDegrees - vorneToleranz);
         } else if (floor(vornehintenNeigungDegrees) < hintenToleranz) {

@@ -130,7 +130,7 @@ function sendInfo()
 function setTitle(text)
 {
     $("#text").html(text);
-    $("#text").fitText(3.5);
+    $("#text").fitText(2.5);
 }
 
 document.addEventListener("DOMContentLoaded", ready, false);
