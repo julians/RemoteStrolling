@@ -15,6 +15,8 @@ float[] neckAverageY;
 boolean horizontalMovement = true;
 boolean mirrorHorizontalMovement = false;
 boolean verticalMovement = true;
+boolean useStep = true;
+boolean useTurn = true;
 
 float previousYaw = 0;
 float previousPitch = 0;
@@ -24,6 +26,7 @@ float pitch = 0;
 boolean kinect = false;
 
 boolean jumpInProgress = false;
+boolean step = false;
 
 void setup()
 {
@@ -93,6 +96,39 @@ void checkForJumping (PVector neck, PVector feet)
     }
 }
 
+void checkForStep(int userId) {
+    PVector head = new PVector();
+    context.getJointPositionSkeleton(userId, SimpleOpenNI.SKEL_HEAD, head);
+    PVector neck = new PVector();
+    context.getJointPositionSkeleton(userId, SimpleOpenNI.SKEL_NECK, neck);
+    PVector leftFoot = new PVector();
+    context.getJointPositionSkeleton(userId, SimpleOpenNI.SKEL_LEFT_FOOT, leftFoot);
+    PVector rightFoot = new PVector();
+    context.getJointPositionSkeleton(userId, SimpleOpenNI.SKEL_RIGHT_FOOT, rightFoot);
+    PVector blah = PVector.div(PVector.add(leftFoot, rightFoot), 2);
+    bodyHeight = PVector.dist(blah, head);
+    PVector leftKnee = new PVector();
+    context.getJointPositionSkeleton(userId, SimpleOpenNI.SKEL_LEFT_KNEE, leftKnee);
+    PVector rightKnee = new PVector();
+    context.getJointPositionSkeleton(userId, SimpleOpenNI.SKEL_RIGHT_KNEE, rightKnee);
+    PVector leftHip = new PVector();
+    context.getJointPositionSkeleton(userId, SimpleOpenNI.SKEL_RIGHT_HIP, rightKnee);
+    PVector rightHip = new PVector();
+    context.getJointPositionSkeleton(userId, SimpleOpenNI.SKEL_RIGHT_HIP, rightKnee);
+    PVector torso = new PVector();
+    context.getJointPositionSkeleton(userId, SimpleOpenNI.SKEL_TORSO, torso);
+    PVector waist = new PVector();
+    context.getJointPositionSkeleton(userId, SimpleOpenNI.SKEL_WAIST, torso);
+    int stepDist= floor(norm(abs(rightFoot.y-leftFoot.y), 0, (rightHip.dist(rightFoot)+leftHip.dist(leftFoot))/2)*100);
+ 
+    if (step) {
+        step = (stepDist == 0) ? false: step;
+    } else if (stepDist > 1) {
+        step = true;
+        sendStep();
+     }
+ }
+
 void calculateThings(int userId)
 {
     PVector head = new PVector();
@@ -106,42 +142,62 @@ void calculateThings(int userId)
     PVector blah = PVector.div(PVector.add(leftFoot, rightFoot), 2);
     bodyHeight = PVector.dist(blah, head);
     
-    checkForJumping(neck, blah);
+    if (useStep) {
+        checkForStep(userId);
+    } else {
+        checkForJumping(neck, blah);
+    }
 
     PMatrix3D  orientation = new PMatrix3D();
     float confidence = context.getJointOrientationSkeleton(userId,SimpleOpenNI.SKEL_HEAD,orientation);
 
-    /*
     if (horizontalMovement) {
-        PVector seitlicheNeigung = new PVector(0, 0, 0);
-        orientation.mult(new PVector(0, -100, 0), seitlicheNeigung);
-        seitlicheNeigung = new PVector(seitlicheNeigung.x, seitlicheNeigung.y);
-        seitlicheNeigung.normalize();
-        seitlicheNeigung.mult(100);
-        pushMatrix();
-            translate(width/2, height/2);
-            stroke(0, 0, 255, 128);
-            strokeWeight(20);
-            line(0, 0, seitlicheNeigung.x, seitlicheNeigung.y);
-        popMatrix();
-        float seitlicheNeigungDegrees = degrees(seitlicheNeigung.heading2D()) + 90;
-        println("vertikal geneigt um " + seitlicheNeigungDegrees);
-        float seitlicheNeigungToleranz = 4;
-        if (floor(seitlicheNeigungDegrees) > seitlicheNeigungToleranz) {
-            if (mirrorHorizontalMovement) {
-                socket.broadcast("left:" + sqrt(abs(seitlicheNeigungDegrees - seitlicheNeigungToleranz)));
-            } else {
-                socket.broadcast("right:" + sqrt(abs(seitlicheNeigungDegrees - seitlicheNeigungToleranz)));
+        if (useTurn) {
+            PVector linksrechts = new PVector(0, 0, 0);
+            orientation.mult(new PVector(0, 0, -100), linksrechts);
+            linksrechts = new PVector(-linksrechts.x, linksrechts.z);
+            linksrechts.normalize();
+            linksrechts.mult(100);
+            pushMatrix();
+                translate(width/2, height/2);
+                stroke(255, 0, 0, 128);
+                strokeWeight(20);
+                line(0, 0, linksrechts.x, linksrechts.y);
+            popMatrix();
+            float linksrechtsGrad = degrees(linksrechts.heading2D()) + 90;
+            //println("links/rechts gedreht um " + linksrechtsGrad);
+
+            float linksrechtsToleranz = 15;
+            if (abs(linksrechtsGrad) > linksrechtsToleranz) {
+                float grad = sqrt(sqrt(abs(linksrechtsGrad - linksrechtsToleranz)));
+                if (linksrechtsGrad < 0) grad *= -1;
+                if (mirrorHorizontalMovement) grad *= -1;
+                yaw += round(grad);
             }
-        } else if (floor(seitlicheNeigungDegrees) < - seitlicheNeigungToleranz) {
-            if (mirrorHorizontalMovement) {
-                socket.broadcast("right:" + sqrt(abs(seitlicheNeigungDegrees + seitlicheNeigungToleranz)));
-            } else {
-                socket.broadcast("left:" + sqrt(abs(seitlicheNeigungDegrees + seitlicheNeigungToleranz)));
+        } else {
+            PVector seitlicheNeigung = new PVector(0, 0, 0);
+            orientation.mult(new PVector(0, -100, 0), seitlicheNeigung);
+            seitlicheNeigung = new PVector(seitlicheNeigung.x, seitlicheNeigung.y);
+            seitlicheNeigung.normalize();
+            seitlicheNeigung.mult(100);
+            pushMatrix();
+                translate(width/2, height/2);
+                stroke(0, 0, 255, 128);
+                strokeWeight(20);
+                line(0, 0, seitlicheNeigung.x, seitlicheNeigung.y);
+            popMatrix();
+            float seitlicheNeigungDegrees = degrees(seitlicheNeigung.heading2D()) + 90;
+            println("vertikal geneigt um " + seitlicheNeigungDegrees);
+            float seitlicheNeigungToleranz = 4;
+            
+            if (abs(seitlicheNeigungDegrees) > seitlicheNeigungToleranz) {
+                float grad = sqrt(sqrt(abs(seitlicheNeigungDegrees - seitlicheNeigungToleranz)));
+                if (seitlicheNeigungDegrees < 0) grad *= -1;
+                if (mirrorHorizontalMovement) grad *= -1;
+                yaw += round(grad);
             }
         }
     }
-    */
     if (verticalMovement) {
         PVector vornehintenNeigung = new PVector(0, 0, 0);
         orientation.mult(new PVector(0, 0, 100), vornehintenNeigung);
@@ -162,29 +218,6 @@ void calculateThings(int userId)
             pitch = round(vornehintenNeigungDegrees - vorneToleranz);
         } else if (floor(vornehintenNeigungDegrees) < hintenToleranz) {
             pitch = round(vornehintenNeigungDegrees + hintenToleranz);
-        }
-    }
-    if (horizontalMovement) {
-        PVector linksrechts = new PVector(0, 0, 0);
-        orientation.mult(new PVector(0, 0, -100), linksrechts);
-        linksrechts = new PVector(-linksrechts.x, linksrechts.z);
-        linksrechts.normalize();
-        linksrechts.mult(100);
-        pushMatrix();
-            translate(width/2, height/2);
-            stroke(255, 0, 0, 128);
-            strokeWeight(20);
-            line(0, 0, linksrechts.x, linksrechts.y);
-        popMatrix();
-        float linksrechtsGrad = degrees(linksrechts.heading2D()) + 90;
-        //println("links/rechts gedreht um " + linksrechtsGrad);
-        
-        float linksrechtsToleranz = 15;
-        if (abs(linksrechtsGrad) > linksrechtsToleranz) {
-            float grad = sqrt(sqrt(abs(linksrechtsGrad - linksrechtsToleranz)));
-            if (linksrechtsGrad < 0) grad *= -1;
-            if (mirrorHorizontalMovement) grad *= -1;
-            yaw += round(grad);
         }
     }
     sendViewUpdate();
@@ -220,33 +253,43 @@ void keyPressed()
                 break;
             case 'x':
                 mirrorHorizontalMovement = !mirrorHorizontalMovement;
-                println("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
                 if (mirrorHorizontalMovement) {
                     println("mirror movement ON");
                 } else {
                     println("mirror movement OFF");
                 }
-                println("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
                 break;
             case 'h':
                 horizontalMovement = !horizontalMovement;
-                println("hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh");
                 if (horizontalMovement) {
                     println("horizontal movement ON");
                 } else {
                     println("horizontal movement OFF");
                 }
-                println("hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh");
                 break;
             case 'v':
                 verticalMovement = !verticalMovement;
-                println("vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv");
                 if (verticalMovement) {
                     println("vertical movement ON");
                 } else {
                     println("vertical movement OFF");
                 }
-                println("vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv");
+                break;
+            case 'r':
+                useTurn = !useTurn;
+                if (useTurn) {
+                    println("using TURNING");
+                } else {
+                    println("using LEANING");
+                }
+                break;
+            case 't':
+                useStep = !useStep;
+                if (useStep) {
+                    println("using STEPPING");
+                } else {
+                    println("using JUMPING");
+                }
                 break;
         }
     }
