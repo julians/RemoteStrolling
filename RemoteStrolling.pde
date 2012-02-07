@@ -15,7 +15,6 @@ float[] neckAverageY;
 boolean horizontalMovement = true;
 boolean mirrorHorizontalMovement = false;
 boolean verticalMovement = true;
-boolean useStep = true;
 boolean useTurn = true;
 
 float previousYaw = 0;
@@ -138,11 +137,8 @@ void calculateThings(int userId)
     PVector blah = PVector.div(PVector.add(leftFoot, rightFoot), 2);
     bodyHeight = PVector.dist(blah, head);
     
-    if (useStep) {
-        checkForStep(userId);
-    } else {
-        checkForJumping(neck, blah);
-    }
+    checkForStep(userId);
+    checkForJumping(neck, blah);
 
     PMatrix3D  orientation = new PMatrix3D();
     float confidence = context.getJointOrientationSkeleton(userId,SimpleOpenNI.SKEL_HEAD,orientation);
@@ -277,14 +273,6 @@ void keyPressed()
                     println("using TURNING");
                 } else {
                     println("using LEANING");
-                }
-                break;
-            case 't':
-                useStep = !useStep;
-                if (useStep) {
-                    println("using STEPPING");
-                } else {
-                    println("using JUMPING");
                 }
                 break;
         }
