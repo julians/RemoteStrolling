@@ -11,6 +11,7 @@ float rotY = radians(0);
 float bodyHeight = 0;
 float[] footAverageY;
 float[] neckAverageY;
+float[] verticalTiltAverage;
 
 boolean horizontalMovement = true;
 boolean mirrorHorizontalMovement = false;
@@ -42,6 +43,7 @@ void setup()
     smooth();
     footAverageY = new float[30];
     neckAverageY = new float[30];
+    verticalTiltAverage = new float[10];
 }
 
 void draw()
@@ -203,13 +205,28 @@ void calculateThings(int userId)
             line(0, 0, vornehintenNeigung.x, vornehintenNeigung.y);
         popMatrix();
         float vornehintenNeigungDegrees = degrees(vornehintenNeigung.heading2D());
+        
+        float verticalTiltAverageValue = 0;
+        int verticalTiltValues = 1;
+        for (int i = 0; i < verticalTiltAverage.length; i++) {
+            if (i + 1 < verticalTiltAverage.length) {
+                verticalTiltAverage[i+1] = verticalTiltAverage[i];
+                verticalTiltAverageValue += verticalTiltAverage[i+1];
+                if (verticalTiltAverage[i+1] > 0) verticalTiltValues++;
+            }
+        }
+        verticalTiltAverage[0] = vornehintenNeigungDegrees;
+
+        verticalTiltAverageValue += vornehintenNeigungDegrees;
+        verticalTiltAverageValue /= verticalTiltValues;
+        
         //println("vorne/hinten geneigt um " + vornehintenNeigungDegrees);
         float vorneToleranz = 22;
         float hintenToleranz = 2;
-        if (floor(vornehintenNeigungDegrees) > vorneToleranz) {
-            pitch = round(vornehintenNeigungDegrees - vorneToleranz);
-        } else if (floor(vornehintenNeigungDegrees) < hintenToleranz) {
-            pitch = round(vornehintenNeigungDegrees + hintenToleranz);
+        if (floor(verticalTiltAverageValue) > vorneToleranz) {
+            pitch = round(verticalTiltAverageValue - vorneToleranz);
+        } else if (floor(verticalTiltAverageValue) < hintenToleranz) {
+            pitch = round(verticalTiltAverageValue + hintenToleranz);
         }
     }
     sendViewUpdate();
