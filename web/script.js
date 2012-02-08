@@ -15,11 +15,6 @@ var panoLeftOffset = -100;
 var panoRightOffset = 0;
 
 var places = {
-    "standard": {
-        title: "Remote Strolling",
-        coords: new GLatLng(45.511889, -122.675578),
-        yaw: 180
-    },
     "berkeley": {
         title: "University of California, Berkeley",
         coords: new GLatLng(37.872678, -122.261733),
@@ -29,12 +24,30 @@ var places = {
         title: "University of Oxford, England",
         coords: new GLatLng(51.756179,-1.255295),
         yaw: 160
+    },
+    "trinityCollege": {
+        title: "Trinitry College, Cambridge University",
+        coords: new GLatLng(52.20707,0.118151),
+        yaw: 288
+    },
+    "blackcomb": {
+        title: "Whistler and Blackcomb Mountains",
+        coords: new GLatLng(50.091685, -122.884727),
+        yaw: 260
+    },
+    "oxfordStreet": {
+        title: "Oxford Street, London&nbsp;W1",
+        coords: new GLatLng(51.514922, -0.144692),
+        yaw: 270
     }
 };
 
+var placesOrder = ["oxfordStreet", "blackcomb", "trinityCollege", "oxford", "berkeley"];
+var currentPlace = 0;
+
 function setPosition (place)
 {
-    var pos = places[place];
+    var pos = place;
     panorama.setLocationAndPOV(pos.coords, {yaw: pos.yaw, pitch: currentPitch, zoom: currentZoom});
     setTitle(pos.title);
 }
@@ -42,12 +55,38 @@ function setPosition (place)
 function ready ()
 {
     panorama = new GStreetviewPanorama(document.getElementById("pano"));
-    setPosition("oxford");
+    setPosition(getCurrentPlace());
     openWebSocket();
     drawCurtains();
     $(window).resize(function() {
         drawCurtains();
     });
+    $(window).keypress(function (event) {
+        if (event.charCode == 97) {
+            previousPlace();
+        } else if (event.charCode == 115) {
+            nextPlace();
+        }
+    });
+}
+
+function getCurrentPlace ()
+{
+    return places[placesOrder[currentPlace]];
+}
+
+function nextPlace ()
+{
+    currentPlace++;
+    if (currentPlace >= placesOrder.length) currentPlace = 0;
+    setPosition(getCurrentPlace());
+}
+
+function previousPlace ()
+{
+    currentPlace--;
+    if (currentPlace < 0) currentPlace = placesOrder.length-1;
+    setPosition(getCurrentPlace());
 }
 
 function drawCurtains ()
@@ -130,7 +169,7 @@ function sendInfo()
 function setTitle(text)
 {
     $("#text").html(text);
-    $("#text").fitText(2.5);
+    //$("#text").fitText(3);
 }
 
 document.addEventListener("DOMContentLoaded", ready, false);
